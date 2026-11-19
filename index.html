@@ -460,8 +460,21 @@
       border-top: 1px solid #e2e8f0;
       font-size: 0.72rem;
       color: #64748b;
+    }
+
+    .pv-footer-meta {
       display: flex;
       justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .pv-footer-link {
+      border-top: 1px solid #e2e8f0;
+      padding-top: 7px;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #1d4ed8;
     }
   </style>
 </head>
@@ -469,7 +482,7 @@
 
 <header>
   <div class="header-left">
-    <h1>🏉 試合速報 v1.0</h1>
+    <h1>🏉 試合速報 v1.1</h1>
     <div class="user-badge" id="user-display">報告者: 取得中...</div>
   </div>
   <button type="button" class="btn-header-reset" id="btn-reset-all">スコア初期化</button>
@@ -592,7 +605,7 @@
   <div class="modal-card">
     <div style="font-weight:800; font-size:0.95rem; color:#0f172a;">📱 カード送信プレビュー（テストモード）</div>
     <p style="font-size:0.76rem; color:#475569; margin:4px 0 8px 0;">
-      LIFF IDを設定すると、LINEの送信先選択画面が開き、以下の速報カードがトーク画面に投稿されます。
+      LIFF環境ではLINEの送信先選択画面が開き、以下の速報カードがトーク画面に投稿されます。
     </p>
     <div class="pv-bubble">
       <div class="pv-header" id="pv-header">
@@ -612,8 +625,11 @@
       </div>
       <div class="pv-highlight" id="pv-highlight" style="display:none;"></div>
       <div class="pv-footer">
-        <span id="pv-reporter">報告: テストユーザー</span>
-        <span id="pv-time">12:00</span>
+        <div class="pv-footer-meta">
+          <span id="pv-reporter">報告: テストユーザー</span>
+          <span id="pv-time">12:00</span>
+        </div>
+        <div class="pv-footer-link">📱 この速報アプリを使う</div>
       </div>
     </div>
     <button type="button" class="btn-small" style="width:100%; padding:10px; font-size:0.88rem;" onclick="document.getElementById('preview-modal').style.display='none'">閉じる</button>
@@ -622,9 +638,10 @@
 
 <script>
   // =========================================================
-  // ★ LINE Developersで発行したLIFF IDをここに貼り付けます
+  // ★ LINE Developersで発行したLIFF ID
   // =========================================================
   const LIFF_ID = "2012705312-7zlKIYrO";
+  const LIFF_URL = `https://liff.line.me/${LIFF_ID}`;
 
   const STORAGE_KEY = "rugby_live_state_v1";
 
@@ -1052,26 +1069,48 @@
           },
           footer: {
             type: "box",
-            layout: "horizontal",
+            layout: "vertical",
             backgroundColor: "#F8FAFC",
-            paddingAll: "8px",
+            paddingAll: "10px",
             paddingStart: "14px",
             paddingEnd: "14px",
+            spacing: "sm",
             contents: [
               {
-                type: "text",
-                text: `報告: ${reporterName}`,
-                size: "xxs",
-                color: "#64748B",
-                flex: 3
+                type: "box",
+                layout: "horizontal",
+                contents: [
+                  {
+                    type: "text",
+                    text: `報告: ${reporterName}`,
+                    size: "xxs",
+                    color: "#64748B",
+                    flex: 3
+                  },
+                  {
+                    type: "text",
+                    text: nowTime,
+                    size: "xxs",
+                    color: "#64748B",
+                    align: "end",
+                    flex: 1
+                  }
+                ]
               },
               {
-                type: "text",
-                text: nowTime,
-                size: "xxs",
-                color: "#64748B",
-                align: "end",
-                flex: 1
+                type: "separator",
+                color: "#E2E8F0"
+              },
+              {
+                type: "button",
+                style: "link",
+                height: "sm",
+                color: "#1D4ED8",
+                action: {
+                  type: "uri",
+                  label: "📱 この速報アプリを使う",
+                  uri: LIFF_URL
+                }
               }
             ]
           }
