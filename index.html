@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>試合速報</title>
+
+  <!-- LIFF SDK -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
+  <!-- GA4 Tracking Code (ラグビーアプリ共通) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-8PJYQKC5F5"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-8PJYQKC5F5');
+  </script>
+
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --navy: #0f172a;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #cbd5e1;
+      --home: #1d4ed8;
+      --home-bg: #eff6ff;
+      --away: #b91c1c;
+      --away-bg: #fef2f2;
+      --line: #06c755;
+      --try: #d97706;
+      --tackle: #0284c7;
+      --play: #15803d;
+      --info: #475569;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    header {
+      background: var(--navy);
+      color: #fff;
+      padding: 10px 14px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .header-left h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      letter-spacing: 0.03em;
+    }
+
+    .user-badge {
+      font-size: 0.72rem;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    .btn-header-reset {
+      background: rgba(255,255,255,0.12);
+      color: #e2e8f0;
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .btn-header-reset:active {
+      background: rgba(255,255,255,0.25);
+    }
+
+    main {
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 12px;
+      padding-bottom: 36px;
+    }
+
+    .status-banner {
+      font-size: 0.76rem;
+      padding: 8px 10px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde68a;
+      display: none;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    .section-title {
+      font-size: 0.88rem;
+      font-weight: 800;
+      margin: 0 0 10px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--navy);
+    }
+
+    /* 時間区分＆経過分 */
+    .period-row {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .period-btn {
+      flex: 1;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 7px 4px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .period-btn.active {
+      background: var(--navy);
+      color: #fff;
+      border-color: var(--navy);
+    }
+
+    .time-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      background: #f8fafc;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 3px 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .time-input-wrap input {
+      width: 34px;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text);
+      outline: none;
+    }
+
+    /* スコアボード */
+    .scoreboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .team-box {
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      border: 2px solid transparent;
+    }
+
+    .team-box.home {
+      background: var(--home-bg);
+      border-color: #bfdbfe;
+    }
+
+    .team-box.away {
+      background: var(--away-bg);
+      border-color: #fecaca;
+    }
+
+    .team-name-input {
+      width: 100%;
+      border: 1px dashed rgba(0,0,0,0.2);
+      background: rgba(255,255,255,0.75);
+      border-radius: 6px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .score-num {
+      font-size: 2.5rem;
+      font-weight: 900;
+      line-height: 1.15;
+      margin: 6px 0 8px 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .team-box.home .score-num { color: var(--home); }
+    .team-box.away .score-num { color: var(--away); }
+
+    .score-btns {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+
+    .pt-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 7px 2px;
+      font-size: 0.78rem;
+      font-weight: 800;
+      cursor: pointer;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      line-height: 1.1;
+    }
+
+    .pt-btn span.sub {
+      font-size: 0.6rem;
+      font-weight: 600;
+      opacity: 0.9;
+      margin-top: 1px;
+    }
+
+    .team-box.home .pt-btn { background: var(--home); }
+    .team-box.away .pt-btn { background: var(--away); }
+    .pt-btn.minus { background: #64748b !important; }
+    .pt-btn:active { transform: scale(0.95); opacity: 0.85; }
+
+    /* 良いプレーカテゴリー */
+    .play-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+
+    .play-btn {
+      border: 2px solid var(--border);
+      background: #fff;
+      border-radius: 10px;
+      padding: 9px 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .play-btn .emoji { font-size: 1.45rem; line-height: 1.1; }
+    .play-btn .label { font-size: 0.74rem; font-weight: 700; color: var(--text); }
+
+    .play-btn.active[data-type="try"] {
+      border-color: var(--try); background: #fffbeb; color: var(--try);
+    }
+    .play-btn.active[data-type="tackle"] {
+      border-color: var(--tackle); background: #f0f9ff; color: var(--tackle);
+    }
+    .play-btn.active[data-type="play"] {
+      border-color: var(--play); background: #f0fdf4; color: var(--play);
+    }
+    .play-btn.active[data-type="info"] {
+      border-color: var(--info); background: #f1f5f9; color: var(--info);
+    }
+
+    /* 背番号・対象チーム選択行 */
+    .player-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .select-box {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .select-box select {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      outline: none;
+    }
+
+    /* クイックタグ */
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .tag-chip {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+    }
+
+    .tag-chip:active {
+      background: #cbd5e1;
+    }
+
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 10px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 58px;
+    }
+
+    .btn-small {
+      background: #fff;
+      border: 1px solid #94a3b8;
+      border-radius: 6px;
+      padding: 3px 9px;
+      font-size: 0.74rem;
+      font-weight: 700;
+      cursor: pointer;
+      color: #475569;
+    }
+
+    /* 送信ボタン */
+    .send-btn {
+      width: 100%;
+      background: var(--line);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 15px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(6, 199, 85, 0.32);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .send-btn:active {
+      transform: scale(0.99);
+      opacity: 0.92;
+    }
+
+    /* テストプレビューモーダル */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.65);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-card {
+      background: #fff;
+      border-radius: 14px;
+      max-width: 390px;
+      width: 100%;
+      padding: 14px;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.25);
+    }
+
+    .pv-bubble {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 10px 0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+
+    .pv-header {
+      background: var(--navy);
+      color: #fff;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+
+    .pv-score-area {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      padding: 14px 12px;
+      text-align: center;
+      background: #fff;
+    }
+
+    .pv-team { font-size: 0.78rem; font-weight: 700; color: #475569; }
+    .pv-pts { font-size: 2rem; font-weight: 900; line-height: 1.1; margin-top: 2px; }
+    .pv-vs { font-size: 1rem; font-weight: 800; color: #94a3b8; padding: 0 8px; }
+
+    .pv-highlight {
+      margin: 0 12px 12px 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border-left: 4px solid var(--try);
+      font-size: 0.85rem;
+    }
+
+    .pv-footer {
+      padding: 8px 14px;
+      background: #f8fafc;
+      border-top: 1px solid #e2e8f0;
+      font-size: 0.72rem;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>🏉 試合速報 v1.0</h1>
+    <div class="user-badge" id="user-display">報告者: 取得中...</div>
+  </div>
+  <button type="button" class="btn-header-reset" id="btn-reset-all">スコア初期化</button>
+</header>
+
+<main>
+  <div id="mode-banner" class="status-banner"></div>
+
+  <!-- 1. スコアボード -->
+  <div class="card">
+    <div class="section-title">
+      <span>1. スコアボード</span>
+      <span style="font-size:0.72rem; font-weight:600; color:#64748b;">※チーム名はタップで変更可</span>
+    </div>
+
+    <div class="period-row">
+      <button type="button" class="period-btn active" data-period="前半">前半</button>
+      <button type="button" class="period-btn" data-period="後半">後半</button>
+      <button type="button" class="period-btn" data-period="試合終了">終了</button>
+      <div class="time-input-wrap">
+        <input type="number" id="match-min" min="0" max="99" placeholder="--" inputmode="numeric">
+        <span>分</span>
+      </div>
+    </div>
+
+    <div class="scoreboard-grid">
+      <!-- 自チーム -->
+      <div class="team-box home">
+        <input type="text" id="home-name" class="team-name-input" value="自チーム" maxlength="12">
+        <div class="score-num" id="home-score">0</div>
+        <div class="score-btns">
+          <button type="button" class="pt-btn" onclick="addScore('home', 5)">+5<span class="sub">T</span></button>
+          <button type="button" class="pt-btn" onclick="addScore('home', 2)">+2<span class="sub">G</span></button>
+          <button type="button" class="pt-btn" onclick="addScore('home', 3)">+3<span class="sub">PG</span></button>
+          <button type="button" class="pt-btn minus" onclick="addScore('home', -1)">-1<span class="sub">戻</span></button>
+        </div>
+      </div>
+
+      <!-- 相手チーム -->
+      <div class="team-box away">
+        <input type="text" id="away-name" class="team-name-input" value="相手チーム" maxlength="12">
+        <div class="score-num" id="away-score">0</div>
+        <div class="score-btns">
+          <button type="button" class="pt-btn" onclick="addScore('away', 5)">+5<span class="sub">T</span></button>
+          <button type="button" class="pt-btn" onclick="addScore('away', 2)">+2<span class="sub">G</span></button>
+          <button type="button" class="pt-btn" onclick="addScore('away', 3)">+3<span class="sub">PG</span></button>
+          <button type="button" class="pt-btn minus" onclick="addScore('away', -1)">-1<span class="sub">戻</span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. 良いプレー・速報内容（任意） -->
+  <div class="card">
+    <div class="section-title">
+      <span>2. 良いプレー・速報（任意）</span>
+      <button type="button" class="btn-small" id="clear-play">入力クリア</button>
+    </div>
+
+    <div class="play-grid" id="play-grid">
+      <button type="button" class="play-btn" data-type="try">
+        <span class="emoji">🏉</span>
+        <span class="label">トライ</span>
+      </button>
+      <button type="button" class="play-btn" data-type="tackle">
+        <span class="emoji">💥</span>
+        <span class="label">タックル</span>
+      </button>
+      <button type="button" class="play-btn" data-type="play">
+        <span class="emoji">🔥</span>
+        <span class="label">好プレー</span>
+      </button>
+      <button type="button" class="play-btn" data-type="info">
+        <span class="emoji">📢</span>
+        <span class="label">試合経過</span>
+      </button>
+    </div>
+
+    <div class="player-row">
+      <div class="select-box">
+        <span>背番号:</span>
+        <select id="jersey-num">
+          <option value="">指定なし</option>
+        </select>
+      </div>
+      <div class="select-box">
+        <span>チーム:</span>
+        <select id="play-side">
+          <option value="home">自チーム</option>
+          <option value="away">相手チーム</option>
+          <option value="none">指定なし</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="tag-list">
+      <span class="tag-chip" data-text="ゴール成功">＋ゴール成功</span>
+      <span class="tag-chip" data-text="ゴール失敗">＋ゴール失敗</span>
+      <span class="tag-chip" data-text="ナイスタックル！">＋ナイスタックル</span>
+      <span class="tag-chip" data-text="ジャッカル成功！">＋ジャッカル</span>
+      <span class="tag-chip" data-text="ビッグゲイン！">＋ビッグゲイン</span>
+      <span class="tag-chip" data-text="モール押し込み">＋モール</span>
+      <span class="tag-chip" data-text="スクラム優勢">＋スクラム</span>
+      <span class="tag-chip" data-text="ナイスキック">＋キック</span>
+      <span class="tag-chip" data-text="インターセプト！">＋インターセプト</span>
+      <span class="tag-chip" data-text="ナイスDF！">＋ナイスDF</span>
+    </div>
+
+    <textarea id="memo-input" placeholder="任意メモ）例：左サイドを突破してトライ！／キックオフしました"></textarea>
+  </div>
+
+  <!-- 送信ボタン -->
+  <button type="button" class="send-btn" id="send-btn">
+    <span>📤 速報カードをLINEで共有</span>
+  </button>
+</main>
+
+<!-- テストプレビュー用モーダル（LIFF ID未設定時に表示） -->
+<div class="modal-backdrop" id="preview-modal">
+  <div class="modal-card">
+    <div style="font-weight:800; font-size:0.95rem; color:#0f172a;">📱 カード送信プレビュー（テストモード）</div>
+    <p style="font-size:0.76rem; color:#475569; margin:4px 0 8px 0;">
+      LIFF IDを設定すると、LINEの送信先選択画面が開き、以下の速報カードがトーク画面に投稿されます。
+    </p>
+    <div class="pv-bubble">
+      <div class="pv-header" id="pv-header">
+        <span id="pv-title">🏉 試合速報</span>
+        <span id="pv-period" style="background:#334155; padding:2px 8px; border-radius:999px; font-size:0.75rem;">前半</span>
+      </div>
+      <div class="pv-score-area">
+        <div>
+          <div class="pv-team" id="pv-home-name">自チーム</div>
+          <div class="pv-pts" id="pv-home-score" style="color:#1d4ed8;">0</div>
+        </div>
+        <div class="pv-vs">-</div>
+        <div>
+          <div class="pv-team" id="pv-away-name">相手チーム</div>
+          <div class="pv-pts" id="pv-away-score" style="color:#b91c1c;">0</div>
+        </div>
+      </div>
+      <div class="pv-highlight" id="pv-highlight" style="display:none;"></div>
+      <div class="pv-footer">
+        <span id="pv-reporter">報告: テストユーザー</span>
+        <span id="pv-time">12:00</span>
+      </div>
+    </div>
+    <button type="button" class="btn-small" style="width:100%; padding:10px; font-size:0.88rem;" onclick="document.getElementById('preview-modal').style.display='none'">閉じる</button>
+  </div>
+</div>
+
+<script>
+  // =========================================================
+  // ★ LINE Developersで発行したLIFF IDをここに貼り付けます
+  // =========================================================
+  const LIFF_ID = "YOUR_LIFF_ID";
+
+  const STORAGE_KEY = "rugby_live_state_v1";
+
+  // 良いプレー種別マスタ
+  const PLAY_CONFIG = {
+    try:    { label: "トライ！",       emoji: "🏉", color: "#D97706", bg: "#FFFBEB" },
+    tackle: { label: "ナイスタックル", emoji: "💥", color: "#0284C7", bg: "#F0F9FF" },
+    play:   { label: "好プレー！",     emoji: "🔥", color: "#15803D", bg: "#F0FDF4" },
+    info:   { label: "試合経過",       emoji: "📢", color: "#475569", bg: "#F1F5F9" }
+  };
+
+  let state = {
+    homeName: "自チーム",
+    awayName: "相手チーム",
+    homeScore: 0,
+    awayScore: 0,
+    period: "前半",
+    minute: ""
+  };
+
+  let selectedPlay = null; // null = スコアのみ共有
+  let reporterName = "観戦メンバー";
+  let isLiffReady = false;
+
+  // 初期化
+  window.addEventListener("DOMContentLoaded", async () => {
+    populateJerseyOptions();
+    loadState();
+    setupUIEvents();
+    await initLiffApp();
+  });
+
+  // 背番号プルダウン生成（1〜25番）
+  function populateJerseyOptions() {
+    const sel = document.getElementById("jersey-num");
+    for (let i = 1; i <= 25; i++) {
+      const opt = document.createElement("option");
+      opt.value = String(i);
+      opt.textContent = `#${i} 番`;
+      sel.appendChild(opt);
+    }
+  }
+
+  // ローカルストレージからスコア状態を復元
+  function loadState() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        state = { ...state, ...JSON.parse(saved) };
+      }
+    } catch (e) {
+      console.warn("State load error:", e);
+    }
+    renderScoreboard();
+  }
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
+  }
+
+  function renderScoreboard() {
+    document.getElementById("home-name").value = state.homeName;
+    document.getElementById("away-name").value = state.awayName;
+    document.getElementById("home-score").textContent = state.homeScore;
+    document.getElementById("away-score").textContent = state.awayScore;
+    document.getElementById("match-min").value = state.minute;
+
+    document.querySelectorAll(".period-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.period === state.period);
+    });
+
+    // チーム選択プルダウンの表示名も同期
+    const playSide = document.getElementById("play-side");
+    playSide.options[0].textContent = state.homeName || "自チーム";
+    playSide.options[1].textContent = state.awayName || "相手チーム";
+  }
+
+  // 得点加減算
+  window.addScore = function(side, pts) {
+    if (side === "home") {
+      state.homeScore = Math.max(0, state.homeScore + pts);
+    } else {
+      state.awayScore = Math.max(0, state.awayScore + pts);
+    }
+    saveState();
+    renderScoreboard();
+  };
+
+  // UIイベント設定
+  function setupUIEvents() {
+    document.getElementById("home-name").addEventListener("input", (e) => {
+      state.homeName = e.target.value;
+      saveState();
+      renderScoreboard();
+    });
+
+    document.getElementById("away-name").addEventListener("input", (e) => {
+      state.awayName = e.target.value;
+      saveState();
+      renderScoreboard();
+    });
+
+    document.getElementById("match-min").addEventListener("input", (e) => {
+      state.minute = e.target.value;
+      saveState();
+    });
+
+    // 前半・後半・終了切替
+    document.querySelectorAll(".period-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        state.period = btn.dataset.period;
+        saveState();
+        renderScoreboard();
+      });
+    });
+
+    // 良いプレー種別（トグル式：同じボタン再タップで選択解除）
+    document.querySelectorAll(".play-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const type = btn.dataset.type;
+        if (selectedPlay === type) {
+          selectedPlay = null;
+          btn.classList.remove("active");
+        } else {
+          document.querySelectorAll(".play-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          selectedPlay = type;
+        }
+      });
+    });
+
+    // クイックタグ追記
+    const memoInput = document.getElementById("memo-input");
+    document.querySelectorAll(".tag-chip").forEach(chip => {
+      chip.addEventListener("click", () => {
+        const text = chip.dataset.text;
+        memoInput.value = memoInput.value ? `${memoInput.value} ${text}` : text;
+      });
+    });
+
+    // 良いプレー入力クリア
+    document.getElementById("clear-play").addEventListener("click", () => {
+      selectedPlay = null;
+      document.querySelectorAll(".play-btn").forEach(b => b.classList.remove("active"));
+      document.getElementById("jersey-num").value = "";
+      document.getElementById("memo-input").value = "";
+    });
+
+    // スコア初期化
+    document.getElementById("btn-reset-all").addEventListener("click", () => {
+      if (!confirm("スコアと経過時間を 0 にリセットしますか？（チーム名は残ります）")) return;
+      state.homeScore = 0;
+      state.awayScore = 0;
+      state.period = "前半";
+      state.minute = "";
+      saveState();
+      renderScoreboard();
+    });
+
+    document.getElementById("send-btn").addEventListener("click", handleSend);
+  }
+
+  // LIFF初期化
+  async function initLiffApp() {
+    const banner = document.getElementById("mode-banner");
+    const userDisplay = document.getElementById("user-display");
+
+    if (!LIFF_ID || LIFF_ID === "YOUR_LIFF_ID") {
+      banner.style.display = "block";
+      banner.textContent = "💡 テストモード動作中：LIFF_IDを設定するとLINEグループへ速報カードを直接送信できます。";
+      userDisplay.textContent = "報告者: テストユーザー（未連携）";
+      return;
+    }
+
+    try {
+      await liff.init({ liffId: LIFF_ID });
+      isLiffReady = true;
+
+      if (!liff.isLoggedIn()) {
+        liff.login();
+        return;
+      }
+
+      const profile = await liff.getProfile();
+      reporterName = profile.displayName;
+      userDisplay.textContent = `報告者: ${reporterName}`;
+    } catch (err) {
+      console.error("LIFF初期化失敗:", err);
+      banner.style.display = "block";
+      banner.textContent = "⚠️ LIFF初期化エラー: " + err.message;
+      userDisplay.textContent = "報告者: 観戦メンバー";
+    }
+  }
+
+  // Flex Message 構築 & 送信
+  async function handleSend() {
+    const hName = (state.homeName || "自チーム").trim();
+    const aName = (state.awayName || "相手チーム").trim();
+    const periodLabel = state.minute ? `${state.period} ${state.minute}分` : state.period;
+    const jersey = document.getElementById("jersey-num").value;
+    const playSide = document.getElementById("play-side").value;
+    const memo = document.getElementById("memo-input").value.trim();
+    const nowTime = new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+
+    const playCfg = selectedPlay ? PLAY_CONFIG[selectedPlay] : null;
+    const hasHighlight = Boolean(playCfg || jersey || memo);
+
+    // ハイライト見出し作成
+    let hlHeader = "";
+    if (playCfg) {
+      hlHeader = `${playCfg.emoji} ${playCfg.label}`;
+    } else if (jersey || memo) {
+      hlHeader = "🏉 速報メモ";
+    }
+
+    let targetLabel = "";
+    if (playSide === "home") targetLabel = hName;
+    else if (playSide === "away") targetLabel = aName;
+
+    let playerTag = "";
+    if (jersey && targetLabel) playerTag = `${targetLabel} #${jersey}`;
+    else if (jersey) playerTag = `背番号 #${jersey}`;
+    else if (targetLabel && hasHighlight) playerTag = targetLabel;
+
+    const accentColor = playCfg ? playCfg.color : "#0F172A";
+    const accentBg = playCfg ? playCfg.bg : "#F8FAFC";
+    const headerTitle = playCfg ? `${playCfg.emoji} RUGBY LIVE` : "🏉 試合速報";
+
+    // LIFF未設定時はプレビューモーダルを表示
+    if (!isLiffReady) {
+      document.getElementById("pv-title").textContent = headerTitle;
+      document.getElementById("pv-period").textContent = periodLabel;
+      document.getElementById("pv-home-name").textContent = hName;
+      document.getElementById("pv-away-name").textContent = aName;
+      document.getElementById("pv-home-score").textContent = state.homeScore;
+      document.getElementById("pv-away-score").textContent = state.awayScore;
+      document.getElementById("pv-reporter").textContent = `報告: ${reporterName}`;
+      document.getElementById("pv-time").textContent = nowTime;
+
+      const pvHl = document.getElementById("pv-highlight");
+      if (hasHighlight) {
+        pvHl.style.display = "block";
+        pvHl.style.borderLeftColor = accentColor;
+        pvHl.style.backgroundColor = accentBg;
+        pvHl.innerHTML = `
+          <div style="font-weight:800; color:${accentColor}; margin-bottom:2px;">
+            ${hlHeader} ${playerTag ? `<span style="background:#0f172a; color:#fff; padding:1px 7px; border-radius:4px; font-size:0.75rem; margin-left:4px;">${playerTag}</span>` : ""}
+          </div>
+          ${memo ? `<div style="color:#1e293b; margin-top:3px;">${escapeHtml(memo)}</div>` : ""}
+        `;
+      } else {
+        pvHl.style.display = "none";
+      }
+
+      document.getElementById("preview-modal").style.display = "flex";
+      return;
+    }
+
+    // Flex Message 本体組み立て
+    const bodyContents = [
+      // スコアボード3カラム
+      {
+        type: "box",
+        layout: "horizontal",
+        alignItems: "center",
+        contents: [
+          {
+            type: "box",
+            layout: "vertical",
+            flex: 4,
+            contents: [
+              {
+                type: "text",
+                text: hName,
+                size: "xs",
+                weight: "bold",
+                color: "#475569",
+                align: "center",
+                wrap: true
+              },
+              {
+                type: "text",
+                text: String(state.homeScore),
+                size: "3xl",
+                weight: "bold",
+                color: "#1D4ED8",
+                align: "center",
+                margin: "xs"
+              }
+            ]
+          },
+          {
+            type: "text",
+            text: "-",
+            size: "xl",
+            weight: "bold",
+            color: "#94A3B8",
+            align: "center",
+            flex: 1
+          },
+          {
+            type: "box",
+            layout: "vertical",
+            flex: 4,
+            contents: [
+              {
+                type: "text",
+                text: aName,
+                size: "xs",
+                weight: "bold",
+                color: "#475569",
+                align: "center",
+                wrap: true
+              },
+              {
+                type: "text",
+                text: String(state.awayScore),
+                size: "3xl",
+                weight: "bold",
+                color: "#B91C1C",
+                align: "center",
+                margin: "xs"
+              }
+            ]
+          }
+        ]
+      }
+    ];
+
+    // 良いプレー／メモがある場合はハイライト枠を追加
+    if (hasHighlight) {
+      const hlBoxContents = [
+        {
+          type: "box",
+          layout: "baseline",
+          spacing: "sm",
+          contents: [
+            {
+              type: "text",
+              text: hlHeader,
+              weight: "bold",
+              size: "md",
+              color: accentColor,
+              flex: 0
+            },
+            ...(playerTag ? [{
+              type: "text",
+              text: playerTag,
+              weight: "bold",
+              size: "xs",
+              color: "#0F172A",
+              wrap: true
+            }] : [])
+          ]
+        }
+      ];
+
+      if (memo) {
+        hlBoxContents.push({
+          type: "text",
+          text: memo,
+          size: "sm",
+          color: "#1E293B",
+          wrap: true,
+          margin: "xs"
+        });
+      }
+
+      bodyContents.push(
+        { type: "separator", margin: "md" },
+        {
+          type: "box",
+          layout: "vertical",
+          backgroundColor: accentBg,
+          cornerRadius: "8px",
+          paddingAll: "10px",
+          margin: "md",
+          contents: hlBoxContents
+        }
+      );
+    }
+
+    const altSummary = `【試合速報】${periodLabel} ${hName} ${state.homeScore}-${state.awayScore} ${aName}${hlHeader ? " / " + hlHeader : ""}${playerTag ? " (" + playerTag + ")" : ""}`;
+
+    const messages = [
+      {
+        type: "flex",
+        altText: altSummary.slice(0, 390),
+        contents: {
+          type: "bubble",
+          size: "kilo",
+          header: {
+            type: "box",
+            layout: "horizontal",
+            backgroundColor: "#0F172A",
+            paddingAll: "12px",
+            alignItems: "center",
+            contents: [
+              {
+                type: "text",
+                text: headerTitle,
+                color: "#FFFFFF",
+                weight: "bold",
+                size: "sm",
+                flex: 3
+              },
+              {
+                type: "text",
+                text: periodLabel,
+                color: "#FACC15",
+                weight: "bold",
+                size: "xs",
+                align: "end",
+                flex: 2
+              }
+            ]
+          },
+          body: {
+            type: "box",
+            layout: "vertical",
+            paddingAll: "14px",
+            contents: bodyContents
+          },
+          footer: {
+            type: "box",
+            layout: "horizontal",
+            backgroundColor: "#F8FAFC",
+            paddingAll: "8px",
+            paddingStart: "14px",
+            paddingEnd: "14px",
+            contents: [
+              {
+                type: "text",
+                text: `報告: ${reporterName}`,
+                size: "xxs",
+                color: "#64748B",
+                flex: 3
+              },
+              {
+                type: "text",
+                text: nowTime,
+                size: "xxs",
+                color: "#64748B",
+                align: "end",
+                flex: 1
+              }
+            ]
+          }
+        }
+      }
+    ];
+
+    try {
+      if (!liff.isApiAvailable("shareTargetPicker")) {
+        alert("送信先選択機能（shareTargetPicker）が利用できません。LINE Developersの設定を確認してください。");
+        return;
+      }
+
+      const res = await liff.shareTargetPicker(messages);
+      if (res) {
+        // 送信成功後、次の速報に備えて「良いプレー・メモ」だけクリア（スコアは保持）
+        selectedPlay = null;
+        document.querySelectorAll(".play-btn").forEach(b => b.classList.remove("active"));
+        document.getElementById("jersey-num").value = "";
+        document.getElementById("memo-input").value = "";
+      }
+    } catch (err) {
+      console.error("送信エラー:", err);
+      alert("送信に失敗しました: " + err.message);
+    }
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, m => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[m]));
+  }
+</script>
+</body>
+</html>
